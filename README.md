@@ -30,17 +30,19 @@ Edit the newly created `Makefile.conf` to allow Fortran type mismatches by setti
 FCFLAGS		=   -fallow-argument-mismatch 
 ```
 
-Edit the installation paths for the MCT library at the bottom of `Makefile.conf`. You can set them wherever you like, but it is recommended to keep them in your scratch directory, at the same level as COWAST:
+Edit the installation paths for the MCT library at the bottom of `Makefile.conf`. You can set them wherever you like, but it is recommended to keep them in your scratch directory, at the same level as COWAST.
 ```makefile
 libdir          = /scratch/<netid>/MCT_install/lib
 includedir      = /scratch/<netid>/MCT_install/include
 ```
 
-Compile MCT and install to the paths specified in `Makefile.conf`
+Compile MCT and install to the paths specified in `Makefile.conf`.  
 ```bash
 make
 make install
 ```
+> [!WARNING]
+>  Make sure all directories and subdirectories in the installation paths (libdir and includedir in Makefile.conf) exist before running `make install`. 
 
 You can verify that MCT was installed correctly by opening the installation directories or listing their contents:
 ```bash
