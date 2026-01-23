@@ -52,8 +52,8 @@ ls /scratch/<netid>/MCT_install/include
 
 Finally, set the MCT environment variables specified in the COAWST User Manual. To do so, add the following lines to your `~/.bash_profile`:
 ```bash
-setenv   MCT_INCDIR   /usr/include
-setenv   MCT_LIBDIR   /usr/lib
+export MCT_INCDIR=/scratch/<netid>/MCT_install/include
+export MCT_LIBDIR=/scratch/<netid>/MCT_install/lib
 ```
 
 Reload the bash profile in you current session to apply the changes immediately:
