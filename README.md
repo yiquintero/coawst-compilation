@@ -36,13 +36,18 @@ libdir          = /scratch/<netid>/MCT_install/lib
 includedir      = /scratch/<netid>/MCT_install/include
 ```
 
-Compile MCT and install to the paths specified in `Makefile.conf`.  
+Create the directories and subdirectories in the installation paths (`libdir` and `includedir` in `Makefile.conf`).
+```
+mkdir -p /scratch/<netid>/MCT_install/lib
+mkdir -p /scratch/<netid>/MCT_install/include
+```
+
+
+Compile MCT and install to the specified paths.  
 ```bash
 make
 make install
 ```
-> [!WARNING]
->  Make sure all directories and subdirectories in the installation paths (libdir and includedir in Makefile.conf) exist before running `make install`. 
 
 You can verify that MCT was installed correctly by opening the installation directories or listing their contents:
 ```bash
