@@ -1,5 +1,5 @@
 # Compiling COAWST on DelftBlue
-Instructions to compile [COAWST](https://github.com/DOI-USGS/COAWST) on the [DelftBlue](https://doc.dhpc.tudelft.nl/delftblue/) supercomputer.
+Instructions to compile [COAWST](https://github.com/DOI-USGS/COAWST) (Coupled Ocean-Atmosphere-Wave-Sediment Transport) on the [DelftBlue](https://doc.dhpc.tudelft.nl/delftblue/) supercomputer.
 
 **Note:** These instructions are tailored for [COAWST v3.8](https://github.com/DOI-USGS/COAWST/releases/tag/COAWST_v3.8) and are meant to complement the official [User Manual](https://github.com/DOI-USGS/COAWST/blob/COAWST_v3.8/COAWST_User_Manual.doc) included in the COAWST repository.
 
@@ -14,7 +14,7 @@ git checkout COAWST_v3.8
 ```
 ## 2. Compile MCT
 
-COAWST depends on the Model Coupling Toolkit (MCT) library. To compile MCT, start by loading the compiler, MPI and NETCDF Fortran modules:
+COAWST depends on the MCT (Model Coupling Toolkit) library. To compile MCT, start by loading the compiler, MPI and NETCDF Fortran modules:
 
 ```bash
 module load 2025
@@ -75,7 +75,7 @@ source ~/.bash_profile
 
 ## 3. Compile SCRIP
 
-COAWST relies on SCRIP for grid remapping. To compile SCRIP, start by loading the compiler, MPI, and NetCDF modules:
+COAWST relies on SCRIP (Spherical Coordinate Remapping and Interpolation Package) for grid remapping. To compile SCRIP, start by loading the compiler, MPI, and NetCDF modules:
 
 ```bash
 module load 2025
@@ -122,7 +122,32 @@ make
 If the compilation is successful, an executable called `scrip_coawst` will be creted in the directory `Lib/SCRIP_COAWST`. 
 
 
-## Compile COAWST
+## 4. Compile COAWST
+
+With MCT and SCRIP successfully built, we can proceed with the COAWST compilation. COAWST is not a single executable but a framework that synchronizes data exchange between independent numerical models:
+- **ROMS**: Regional Ocean Modeling System (Ocean)
+- **WRF**: Weather Research and Forecasting (Atmosphere)
+- **SWAN**: Simulating WAves Nearshore (Waves)
+- **WaveWatch III**: Third-generation wave model (Waves)
+
+Each model is an independent software package that can be run on its own. What COAWST does is facilitate the data exchange between these models using MCT and SCRIP.
+
+<details>
+
+<summary>The roles of MCT and SCRIP</summary>
+
+While each model operates on its own grid, COAWST allows them to "talk" to one another using two specific tools:
+- **MCT (Model Coupling Toolkit)**: Acts as the communication engine. It handles the parallel data exchange between the models. When the simulation is running, MCT is responsible for the "handshake," ensuring that variables reach the correct processor at the right time.
+- **SCRIP (Spherical Coordinate Remapping and Interpolation Package)**: Acts as the grid translator. Because a point on the WRF grid rarely lines up perfectly with a point on the ROMS grid, SCRIP computes the interpolation weights. It determines exactly how to map data from one coordinate system to another.
+
+**In short**: SCRIP tells the system where the data should go across different grids, and MCT actually delivers it during the simulation.
+
+</details>
+
+COAWST can be built with various combinations of these models. This guide focuses on building a triple-coupled application using **ROMS, WRF, and SWAN.**
+
+
+
 
 **NetCDF layout**
 
