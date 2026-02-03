@@ -25,7 +25,7 @@ module load netcdf-fortran
 Move to the MCT directory and run the configuration script
 
 ```bash
-cd Lib/MCT
+cd /scratch/<netid>/COAWST/Lib/MCT
 ./configure # generates Makefile.conf
 ```
 
@@ -115,7 +115,7 @@ INCDIR += $(NETCDF_C_INCDIR) $(INCDIR)
 Finally, compile SCRIP
 
 ```bash
-cd Lib/SCRIP_COAWST
+cd /scratch/<netid>/COAWST/Lib/SCRIP_COAWST
 make
 ```
 
@@ -144,12 +144,75 @@ While each model operates on its own grid, COAWST allows them to "talk" to one a
 
 </details>
 
-COAWST can be built with various combinations of these models. This guide focuses on building a triple-coupled application using **ROMS, WRF, and SWAN.**
+COAWST can be built with various combinations of these models. This guide focuses on building the application using **ROMS, WRF, and SWAN**.
 
+### 4.1 Define compilation options
 
+When compiling COAWST you must select the compilation options for each model. These options are specified via C-preprocessor `#define` statements in a `<project>.h` file. For this guide we are using the pre-configured **Sandy** example which makes use of ROMS, WRF and SWAN. The configuration file is located in `Projects/Sandy/sandy.h`.
 
+If you were creating a new project, you would create a new sub-directory in `Projects/` and place your `<project>.h` inside it.
 
-**NetCDF layout**
+### 4.2 Update build_coawst.sh 
+
+COAWST compilation is managed by the `build_coawst.sh` script located in the root of the repository. This script specifies which compiler and MPI implementation (if any) to use and tells the compiler where to find the source code and which models to activate.
+
+To build a COAWST application that can run the Sandy example, update the following variables in `build_coawst.sh`:
+
+```bash
+# Line 133: set COAWST_APPLICATION to SANDY (uppercase)
+export   COAWST_APPLICATION=SANDY
+
+# Line 141: set MY_ROOT_DIR to the COAWST repository
+export   MY_ROOT_DIR=/scratch/<netid>/COAWST
+
+# Line 209: add # at the beginning of the line to disable the use of Intel MPI
+# export         which_MPI=intel         # compile with mpiifort library
+
+# Line 213: remove # from the beginning of the line to enable the use of OpenMPI
+export         which_MPI=openmpi       # compile with OpenMPI library
+
+# Lines 306-307: set MY_HEADER_DIR and MY_ANALYTICAL_DIR to the Sandy Project
+export     MY_HEADER_DIR=${MY_PROJECT_DIR}/Projects/Sandy
+export MY_ANALYTICAL_DIR=${MY_PROJECT_DIR}/Projects/Sandy
+```
+
+> [!TIP]
+> In bash scripts, adding `#` at the start of a line turns it into a comment, meaning it will be ignored during execution.
+
+### 4.3 Fix bug in SWAN/switch.pl
+
+When compiling COAWST with modern versions of CMake, the build process for the SWAN model may hang indefinitely. This occurs because CMake now passes absolute file paths to the `SWAN/switch.pl` script. The legacy Perl logic incorrectly identifies hyphens within these directory paths (e.g. `/scratch/<netid>/phd-project/COAWST/`) as command-line flags, triggering an infinite loop.
+
+To resolve this issue, locate the following `while` loop in line 18 of `switch.pl`:
+
+```perl
+while ( $ARGV[0]=~/-.*/ )
+```
+
+and replace it with the following:
+
+```perl
+while ( $ARGV[0] =~ /^-/ )
+```
+
+The addition of `^` ensures that Perl only treats the argument as a switch if the hyphen is the first character. This allows the script to correctly ignore hyphens that appear later in folder names or file extensions, allowing the loop to terminate and the compilation to proceed.
+
+### 4.4 Load necessary modules
+
+Load the the compiler, MPI, NetCDF, CMake and Perl modules.
+
+```bash
+module load 2025
+module load gcc
+module load openmpi
+module load netcdf-fortran
+module load netcdf-cxx
+module load netcdf-c
+module load cmake
+module load perl
+```
+
+### 4.5 Create NetCDF layout
 
 SCRIP and COAWST rely on the [netcdf](https://www.unidata.ucar.edu/software/netcdf) library, which provides APIs for Fortran, C and C++.
 
@@ -165,7 +228,7 @@ To avoid modifying SCRIP or COAWST build scripts (or using an outdated NetCDF ve
 1. Create a directory for NetCDF symlinks. We recommend creating a `utilities` directory at the root of the COAWST repository. This directory will act as a “fake” NetCDF installation prefix.
 
 ```bash
-mkdir -p utilities/{bin, lib, include}
+mkdir -p /scratch/<netid>/COAWST/utilities/{bin, lib, include}
 ```
 
 2. Locate NetCDF installation paths. Use the configuration tools provided by NetCDF to locate the installation directories for the Fortran and C interfaces:
@@ -183,16 +246,41 @@ nc-config --prefix
 3. Create the symbolic links.
 
 ```bash
-ln -sf /apps/arch/2023r1/software/linux-rhel8-skylake_avx512/gcc-8.5.0/netcdf-fortran-4.6.0-7ets55p5c7nuask3ah6ejyuvdqq6canp/lib/* lib/
+# Navigate to the new utilities folder
+cd /scratch/<netid>/COAWST/utilities
 
-ln -sf /apps/arch/2023r1/software/linux-rhel8-skylake_avx512/gcc-8.5.0/netcdf-c-4.9.0-di5a6gyhmgbmapai34ran7zzco5jjj2j/lib/* lib/
+# Create symbolic links for Fortran.
+# Replace the netcdf-fortran path for the one returned by nf-config --prefix (step 2)
+ln -sf /apps/arch/2025/software/linux-rhel8-cascadelake/gcc-13.3.0/netcdf-fortran-4.6.1-n2z33vpkn3jcrjacyrtudhif3bt7rxvd/bin/* bin/
+ln -sf /apps/arch/2025/software/linux-rhel8-cascadelake/gcc-13.3.0/netcdf-fortran-4.6.1-n2z33vpkn3jcrjacyrtudhif3bt7rxvd/lib/* lib/
+ln -sf /apps/arch/2025/software/linux-rhel8-cascadelake/gcc-13.3.0/netcdf-fortran-4.6.1-n2z33vpkn3jcrjacyrtudhif3bt7rxvd/include/* include/
 
-ln -sf /apps/arch/2023r1/software/linux-rhel8-skylake_avx512/gcc-8.5.0/netcdf-c-4.9.0-di5a6gyhmgbmapai34ran7zzco5jjj2j/include/* include/
-
-ln -sf /apps/arch/2023r1/software/linux-rhel8-skylake_avx512/gcc-8.5.0/netcdf-c-4.9.0-di5a6gyhmgbmapai34ran7zzco5jjj2j/bin/* bin/
-
-ln -sf /apps/arch/2023r1/software/linux-rhel8-skylake_avx512/gcc-8.5.0/netcdf-fortran-4.6.0-7ets55p5c7nuask3ah6ejyuvdqq6canp/include/* include/
-
-ln -sf /apps/arch/2023r1/software/linux-rhel8-skylake_avx512/gcc-8.5.0/netcdf-fortran-4.6.0-7ets55p5c7nuask3ah6ejyuvdqq6canp/bin/* bin/
+# Create symbolic links for C.
+# Replace the netcdf-c path for the one returned by nc-config --prefix (step 2)
+ln -sf /apps/arch/2025/software/linux-rhel8-cascadelake/gcc-13.3.0/netcdf-c-4.9.2-eazho6ml6uxvu4qea4tnjjjzkjd2mtre/bin/* bin/
+ln -sf /apps/arch/2025/software/linux-rhel8-cascadelake/gcc-13.3.0/netcdf-c-4.9.2-eazho6ml6uxvu4qea4tnjjjzkjd2mtre/lib/* lib/
+ln -sf /apps/arch/2025/software/linux-rhel8-cascadelake/gcc-13.3.0/netcdf-c-4.9.2-eazho6ml6uxvu4qea4tnjjjzkjd2mtre/include/* include/
 ```
 
+4. Set environment variables NETCDF and NETCDF_classic.
+
+```bash
+export NETCDF=/scratch/<netid>/COAWST/utilities
+export NETCDF_classic=1
+```
+
+### 4.6 Compile COAWST
+
+With all environment variables set and dependencies linked, you are ready to compile the main COAWST executable. This is done by running the `build_coawst.sh` script located in the root directory.
+
+Because the Sandy example couples ROMS, WRF, and SWAN, compilation can take a very long time, often over an hour. To speed this up, it is highly recommended to use parallel compilation by passing the `-j` flag followed by the number of threads you wish to use.
+
+```bash
+cd /scratch/<netid>/COAWST
+./build_coawst.sh -j 8
+```
+
+If the compilation is successful, an executable called `coawstM` should be created in the root of the repository.
+
+> [!IMPORTANT]
+> Compiling on a login node with many threads can impact performance for other users. If you are using a high number of threads (e.g., -j 16 or more), consider running the compilation within an interactive `srun` session or as a batch job.
