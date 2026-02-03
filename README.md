@@ -197,7 +197,15 @@ while ( $ARGV[0] =~ /^-/ )
 
 The addition of `^` ensures that Perl only treats the argument as a switch if the hyphen is the first character. This allows the script to correctly ignore hyphens that appear later in folder names or file extensions, allowing the loop to terminate and the compilation to proceed.
 
-### 4.4 Load necessary modules
+### 4.4 Edit Linux-gfortran.mk
+
+Open the file `Compilers/Linux-gfortran.mk` and comment-out line 239 by adding `#` at the begining of the line:
+
+```makefile
+#           FFLAGS += -assume byterecl
+```
+
+### 4.5 Load necessary modules
 
 Load the the compiler, MPI, NetCDF, CMake and Perl modules.
 
@@ -212,7 +220,7 @@ module load cmake
 module load perl
 ```
 
-### 4.5 Create NetCDF layout
+### 4.6 Create NetCDF layout
 
 SCRIP and COAWST rely on the [netcdf](https://www.unidata.ucar.edu/software/netcdf) library, which provides APIs for Fortran, C and C++.
 
@@ -269,9 +277,9 @@ export NETCDF=/scratch/<netid>/COAWST/utilities
 export NETCDF_classic=1
 ```
 
-### 4.6 Compile COAWST
+### 4.7 Compile COAWST
 
-With all environment variables set and dependencies linked, you are ready to compile the main COAWST executable. This is done by running the `build_coawst.sh` script located in the root directory.
+With all environment variables set and dependencies built, you are ready to compile the main COAWST executable. This is done by running the `build_coawst.sh` script located in the root directory.
 
 Because the Sandy example couples ROMS, WRF, and SWAN, compilation can take a very long time, often over an hour. To speed this up, it is highly recommended to use parallel compilation by passing the `-j` flag followed by the number of threads you wish to use.
 
@@ -280,7 +288,12 @@ cd /scratch/<netid>/COAWST
 ./build_coawst.sh -j 8
 ```
 
-If the compilation is successful, an executable called `coawstM` should be created in the root of the repository.
+At some point, the build process will stop and request manual input regarding WRF. For this example, select:
+- **Compiler/Paralellism**: select **34** for gfortran and OpenMPI
+  - dmpar = Distributed memory parallelism (MPI)
+  - smpar = Shared memory parallelism (OpenMP)
+  - serial = No parallelism
+- **Nesting Options**: select **1** for basic nesting. As noted in the COAWST User Manual (Section 8, p. 50), this is the requirement for the Sandy example.
 
-> [!IMPORTANT]
-> Compiling on a login node with many threads can impact performance for other users. If you are using a high number of threads (e.g., -j 16 or more), consider running the compilation within an interactive `srun` session or as a batch job.
+
+If the compilation is successful, an executable called `coawstM` should be created in the root of the repository.
