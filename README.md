@@ -295,5 +295,42 @@ At some point, the build process will stop and request manual input regarding WR
   - serial = No parallelism
 - **Nesting Options**: select **1** for basic nesting. As noted in the COAWST User Manual (Section 8, p. 50), this is the requirement for the Sandy example.
 
+<img width="855" height="391" alt="wrf_compilation_options" src="https://github.com/user-attachments/assets/4bdb61b5-0f28-4942-9477-44fa3bdab719" />
 
 If the compilation is successful, an executable called `coawstM` should be created in the root of the repository.
+
+## 5. Run COAWST
+
+To run COAWST, create a slurm job script, e.g. `slurmjob.sh`, in the root levet of the repository, next to the new `coawstM` executable.
+
+```bash
+touch /scratch/<netid>/COAWST/slurmjob.sh
+```
+
+Add the following contents to the job script:
+
+```bash
+#!/bin/bash
+#SBATCH --job-name="sandy"
+#SBATCH --time=12:00:00       # max job runtime in hh:mm:ss
+#SBATCH --ntasks=16           # num of processes (MPI ranks)
+#SBATCH --cpus-per-task=1     # num threads per MPI process (irrelevant as we are not using OpenMP)
+#SBATCH --mem-per-cpu=1G      # ram memory per CPU  
+#SBATCH --partition=compute
+ 
+# Load required modules:
+module load 2025
+module load gcc
+module load openmpi
+module load netcdf-fortran
+module load netcdf-cxx
+module load netcdf-c
+ 
+# Run the sandy example
+mpirun -np 16 ./coawstM Projects/Sandy/coupling_sandy.in
+ 
+# Optional: print job efficiency summary
+seff $SLURM_JOB_ID
+```
+
+
