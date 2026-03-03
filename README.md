@@ -333,4 +333,17 @@ mpirun -np 16 ./coawstM Projects/Sandy/coupling_sandy.in
 seff $SLURM_JOB_ID
 ```
 
+Steps:
+
+1. Generate files for interpolation. this willl generate scrip_sandy_static.nc
+cd Lib/SCRIP_COAWST
+./scrip_coawst.eze  scrip_coawst_sandy.in
+
+2. Copy scrip_sandy_static.nc to Projects/Sandy
+3. Go to the root of the repo, and copy there files here:
+   - project/sandy/namelist*
+   - projects/sandy/wrf*
+   - projects/sandy/coupling_sandy.in
+  
+4. Then submit job
 
